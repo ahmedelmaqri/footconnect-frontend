@@ -39,12 +39,13 @@ export default function VendorPage() {
 
   const fetchAll = async () => {
     try {
+      // Le vendor connecté EST le vendor — pas besoin de chercher par user_id
       const meRes = await api.get('/me')
       setCurrentUser(meRes.data)
-
-      const vendorsRes = await vendorService.getAll()
-      const myVendor = vendorsRes.data.find(v => v.user_id === meRes.data.id)
-
+      
+      // meRes.data EST déjà le vendor avec shop_name, status, etc.
+      const myVendor = meRes.data
+      
       if (myVendor) {
         setVendor(myVendor)
         setVendorForm({
@@ -55,10 +56,11 @@ export default function VendorPage() {
           logo: myVendor.logo || '',
           banner: myVendor.banner || '',
         })
-        const prodsRes = await productService.getAll({ vendor_id: myVendor.id, page })
-        setProducts(prodsRes.data.data || prodsRes.data)
-        setLastPage(prodsRes.data.last_page || 1)
-        setTotalProducts(prodsRes.data.total || 0)
+        
+        if (myVendor.status === 'approved') {
+          const prodsRes = await productService.getAll({ vendor_id: myVendor.id })
+          setProducts(prodsRes.data.data || prodsRes.data)
+        }
       }
 
       const catsRes = await categoryService.getAll()
@@ -70,17 +72,13 @@ export default function VendorPage() {
     }
   }
 
-  const handleVendorSubmit = async (e) => {
+const handleVendorSubmit = async (e) => {
     e.preventDefault()
     setError('')
     try {
-      if (vendor) {
-        await vendorService.update(vendor.id, vendorForm)
-        setSuccess('Boutique mise à jour !')
-      } else {
-        await vendorService.create(vendorForm)
-        setSuccess('Demande envoyée ! En attente d\'approbation.')
-      }
+      // Toujours update — le vendor connecté met à jour son propre profil
+      await vendorService.update(currentUser.id, vendorForm)
+      setSuccess('Boutique mise à jour !')
       fetchAll()
       setTimeout(() => setSuccess(''), 3000)
     } catch (err) {

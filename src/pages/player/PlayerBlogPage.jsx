@@ -14,7 +14,7 @@ export default function PlayerBlogPage() {
   const [tab, setTab] = useState('all')
 
   useEffect(() => { fetchMe() }, [])
-
+ 
   const fetchMe = async () => {
     try {
       const res = await api.get('/me')
